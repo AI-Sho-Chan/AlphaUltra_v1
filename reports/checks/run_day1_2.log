@@ -1,6 +1,6 @@
 ﻿**********************
 Windows PowerShell トランスクリプト開始
-開始時刻: 20250829051325
+開始時刻: 20250829052140
 ユーザー名: DESKTOP-BIK8NE8\PC_User
 RunAs ユーザー: DESKTOP-BIK8NE8\PC_User
 構成名: 
@@ -26,5 +26,5 @@ PS C:\AI\AlphaUltra_v1> .\.venv\Scripts\python.exe scripts\compute_relative.py -
 PS C:\AI\AlphaUltra_v1> Stop-Transcript
 **********************
 Windows PowerShell トランスクリプト終了
-終了時刻: 20250829051336
+終了時刻: 20250829052147
 **********************
