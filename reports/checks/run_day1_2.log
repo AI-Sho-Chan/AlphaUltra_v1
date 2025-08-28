@@ -1,0 +1,30 @@
+﻿**********************
+Windows PowerShell トランスクリプト開始
+開始時刻: 20250829051325
+ユーザー名: DESKTOP-BIK8NE8\PC_User
+RunAs ユーザー: DESKTOP-BIK8NE8\PC_User
+構成名: 
+コンピューター: DESKTOP-BIK8NE8 (Microsoft Windows NT 10.0.26100.0)
+ホスト アプリケーション: C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe
+プロセス ID: 25996
+PSVersion: 5.1.26100.4768
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.4768
+BuildVersion: 10.0.26100.4768
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+トランスクリプトが開始されました。出力ファイル: .\reports\checks\run_day1_2.log
+PS C:\AI\AlphaUltra_v1> .\.venv\Scripts\python.exe scripts\ingest_prices_yf.py --config configs\base.yaml
+
+PS C:\AI\AlphaUltra_v1> .\.venv\Scripts\python.exe scripts\compute_adjusted.py --config configs\base.yaml
+
+PS C:\AI\AlphaUltra_v1> .\.venv\Scripts\python.exe scripts\compute_relative.py --config configs\base.yaml
+
+PS C:\AI\AlphaUltra_v1> Stop-Transcript
+**********************
+Windows PowerShell トランスクリプト終了
+終了時刻: 20250829051336
+**********************
