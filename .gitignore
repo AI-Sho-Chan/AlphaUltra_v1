@@ -1,0 +1,15 @@
+﻿# Ignore data except registry
+data/**
+!data/registry/
+!data/registry/**
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# OS junk
+.DS_Store
+Thumbs.db
