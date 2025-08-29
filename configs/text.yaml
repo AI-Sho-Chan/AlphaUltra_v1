@@ -1,0 +1,9 @@
+﻿paths:
+  filings_summary: reports/checks/filings_summary.csv
+  edinet_summary:  reports/checks/edinet_summary.csv
+  news_summary:    reports/checks/news_summary.csv
+  news_root:       data/raw/news
+  out_dir:         data/proc/features_text
+  reports_dir:     reports/checks
+windows: [1,5,21]
+weights: { filing: {}, edinet: {}, news: {} }

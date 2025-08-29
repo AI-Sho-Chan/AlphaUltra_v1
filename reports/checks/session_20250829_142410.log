@@ -1,0 +1,276 @@
+﻿**********************
+Windows PowerShell トランスクリプト開始
+開始時刻: 20250829142410
+ユーザー名: DESKTOP-BIK8NE8\PC_User
+RunAs ユーザー: DESKTOP-BIK8NE8\PC_User
+構成名: 
+コンピューター: DESKTOP-BIK8NE8 (Microsoft Windows NT 10.0.26100.0)
+ホスト アプリケーション: C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe
+プロセス ID: 25996
+PSVersion: 5.1.26100.4768
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.4768
+BuildVersion: 10.0.26100.4768
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+トランスクリプトが開始されました。出力ファイル: .\reports\checks\session_20250829_142410.log
+PS C:\AI\AlphaUltra_v1> # 2) 共有パック作成＋push＋URL表示
+PS C:\AI\AlphaUltra_v1> @'
+Param([string]$tag=$(Get-Date -Format yyyyMMdd_HHmmss))
+Set-StrictMode -Version Latest; $ErrorActionPreference="Stop"
+$root=(Get-Location).Path; $share="$root\reports\share"; $checks="$root\reports\checks"
+New-Item -ItemType Directory -Force $share,$checks | Out-Null
+$py=".\.venv\Scripts\python.exe"; $pip=".\.venv\Scripts\pip.exe"
+
+# 環境スナップショット
+$envFile="$checks\env_$tag.txt"
+$sec = $(if($env:SEC_USER_AGENT){"********"}else{"<empty>"}); $edn=$(if($env:EDINET_API_KEY){"********"}else{"<empty>"})
+$pyver=$(if(Test-Path $py){& $py -V}else{"<none>"}); $pipver=$(if(Test-Path $pip){& $pip -V}else{"<none>"})
+$piplist=$(if(Test-Path $pip){& $pip list | Out-String}else{"<none>"})
+@"
+root=$root
+date=$(Get-Date -Format s)
+git_origin=$(git remote get-url origin 2>$null)
+python=$pyver
+pip=$pipver
+SEC_USER_AGENT=$sec
+EDINET_API_KEY=$edn
+"@ | Set-Content -Encoding UTF8 $envFile
+Add-Content $envFile "`n### pip list`n$piplist"
+
+# 収集対象（存在するものだけ）
+$globs=@(
+  "$checks\*.log","$checks\*summary*.csv","$checks\*status*.txt",
+  "configs\*.yaml","scripts\*.py","scripts\*.ps1","utils\*.py",
+  "data\raw\prices\*.parquet","data\proc\adj_prices\*.parquet",
+  "data\proc\labels\*.parquet","data\proc\features_text\*.parquet"
+)
+$files=$globs | ForEach-Object { Get-ChildItem $_ -ErrorAction SilentlyContinue } |
+         Select-Object -Expand FullName -Unique
+$zip="$share\debug_$tag.zip"
+if($files){ Compress-Archive -Path @($envFile)+$files -DestinationPath $zip -Force }
+else       { Compress-Archive -Path $envFile -DestinationPath $zip -Force }
+Write-Host "ZIP -> $zip"
+
+# Git へコミット＆URL出力（失敗ならZipパスだけ表示）
+try{
+  git add $zip,$envFile | Out-Null
+  git commit -m "chore(debug): logs pack $tag" | Out-Null
+  git push | Out-Null
+  $sha=(git rev-parse HEAD).Trim()
+  $remote=(git remote get-url origin)
+  if($remote -match 'github\.com[:/](.+?)/(.+?)(\.git)?$'){ $owner=$Matches[1]; $name=$Matches[2] }
+  $zipRel=$zip.Replace("$root\","")
+  Write-Host ("COMMIT: https://github.com/{0}/{1}/commit/{2}" -f $owner,$name,$sha)
+  Write-Host ("ZIP:    https://github.com/{0}/{1}/blob/{2}/{3}" -f $owner,$name,$sha,$zipRel)
+}catch{ Write-Warning "git push skipped. Share local ZIP: $zip" }
+'@ | Set-Content -Encoding UTF8 .\scripts\share_logs.ps1
+PS C:\AI\AlphaUltra_v1> .\scripts\share_logs.ps1
+PS C:\AI\AlphaUltra_v1> 終了エラー(Compress-Archive): "引数 '+C:\AI\AlphaUltra_v1\reports\checks\last_run.log C:\AI\AlphaUltra_v1\reports\checks\run_day1_2.log C:\AI\AlphaUltra_v1\reports\checks\session_20250829_142410.log C:\AI\AlphaUltra_v1\reports\checks\edinet_summary.csv C:\AI\AlphaUltra_v1\reports\checks\filings_summary.csv C:\AI\AlphaUltra_v1\reports\checks\news_summary.csv C:\AI\AlphaUltra_v1\reports\checks\relative_returns_summary.csv C:\AI\AlphaUltra_v1\reports\checks\edinet_status.txt C:\AI\AlphaUltra_v1\configs\base.yaml C:\AI\AlphaUltra_v1\configs\edinet.yaml C:\AI\AlphaUltra_v1\configs\filings.yaml C:\AI\AlphaUltra_v1\configs\news.yaml C:\AI\AlphaUltra_v1\configs\text.yaml C:\AI\AlphaUltra_v1\scripts\compute_adjusted.py C:\AI\AlphaUltra_v1\scripts\compute_relative.py C:\AI\AlphaUltra_v1\scripts\edgar_ingest.py C:\AI\AlphaUltra_v1\scripts\edinet_features_basic.py C:\AI\AlphaUltra_v1\scripts\edinet_ingest.py C:\AI\AlphaUltra_v1\scripts\edinet_ingest_stub.py C:\AI\AlphaUltra_v1\scripts\edinet_validate.py C:\AI\AlphaUltra_v1\scripts\filing_features_basic.py C:\AI\AlphaUltra_v1\scripts\ingest_prices_yf.py C:\AI\AlphaUltra_v1\scripts\make_filings_summary.py C:\AI\AlphaUltra_v1\scripts\make_share_summary.py C:\AI\AlphaUltra_v1\scripts\news_features_basic.py C:\AI\AlphaUltra_v1\scripts\news_ingest_headlines.py C:\AI\AlphaUltra_v1\scripts\news_validate.py C:\AI\AlphaUltra_v1\scripts\repair_filings_layout.py C:\AI\AlphaUltra_v1\scripts\tdnet_ingest_stub.py C:\AI\AlphaUltra_v1\scripts\validate_filings.py C:\AI\AlphaUltra_v1\scripts\__init__.py C:\AI\AlphaUltra_v1\scripts\clean_venv.ps1 C:\AI\AlphaUltra_v1\scripts\diagnose_yahoo.ps1 C:\AI\AlphaUltra_v1\scripts\env_use_py311.ps1 C:\AI\AlphaUltra_v1\scripts\run_day1_2.ps1 C:\AI\AlphaUltra_v1\scripts\run_day4_5.ps1 C:\AI\AlphaUltra_v1\scripts\run_day6_7.ps1 C:\AI\AlphaUltra_v1\scripts\share_logs.ps1 C:\AI\AlphaUltra_v1\utils\calendar_utils.py C:\AI\AlphaUltra_v1\utils\io_utils.py C:\AI\AlphaUltra_v1\utils\log_utils.py C:\AI\AlphaUltra_v1\utils\sec_utils.py C:\AI\AlphaUltra_v1\utils\__init__.py C:\AI\AlphaUltra_v1\data\raw\prices\7203.T.parquet C:\AI\AlphaUltra_v1\data\raw\prices\9984.T.parquet C:\AI\AlphaUltra_v1\data\raw\prices\AAPL.parquet C:\AI\AlphaUltra_v1\data\raw\prices\MSFT.parquet C:\AI\AlphaUltra_v1\data\raw\prices\SPY.parquet C:\AI\AlphaUltra_v1\data\proc\adj_prices\7203.T.parquet C:\AI\AlphaUltra_v1\data\proc\adj_prices\9984.T.parquet C:\AI\AlphaUltra_v1\data\proc\adj_prices\AAPL.parquet C:\AI\AlphaUltra_v1\data\proc\adj_prices\MSFT.parquet C:\AI\AlphaUltra_v1\data\proc\adj_prices\SPY.parquet C:\AI\AlphaUltra_v1\data\proc\labels\relative_returns.parquet' を受け入れる位置指定パラメーターが見つかりません。"
+>> 終了エラー(Compress-Archive): "引数 '+C:\AI\AlphaUltra_v1\reports\checks\last_run.log C:\AI\AlphaUltra_v1\reports\checks\run_day1_2.log C:\AI\AlphaUltra_v1\reports\checks\session_20250829_142410.log C:\AI\AlphaUltra_v1\reports\checks\edinet_summary.csv C:\AI\AlphaUltra_v1\reports\checks\filings_summary.csv C:\AI\AlphaUltra_v1\reports\checks\news_summary.csv C:\AI\AlphaUltra_v1\reports\checks\relative_returns_summary.csv C:\AI\AlphaUltra_v1\reports\checks\edinet_status.txt C:\AI\AlphaUltra_v1\configs\base.yaml C:\AI\AlphaUltra_v1\configs\edinet.yaml C:\AI\AlphaUltra_v1\configs\filings.yaml C:\AI\AlphaUltra_v1\configs\news.yaml C:\AI\AlphaUltra_v1\configs\text.yaml C:\AI\AlphaUltra_v1\scripts\compute_adjusted.py C:\AI\AlphaUltra_v1\scripts\compute_relative.py C:\AI\AlphaUltra_v1\scripts\edgar_ingest.py C:\AI\AlphaUltra_v1\scripts\edinet_features_basic.py C:\AI\AlphaUltra_v1\scripts\edinet_ingest.py C:\AI\AlphaUltra_v1\scripts\edinet_ingest_stub.py C:\AI\AlphaUltra_v1\scripts\edinet_validate.py C:\AI\AlphaUltra_v1\scripts\filing_features_basic.py C:\AI\AlphaUltra_v1\scripts\ingest_prices_yf.py C:\AI\AlphaUltra_v1\scripts\make_filings_summary.py C:\AI\AlphaUltra_v1\scripts\make_share_summary.py C:\AI\AlphaUltra_v1\scripts\news_features_basic.py C:\AI\AlphaUltra_v1\scripts\news_ingest_headlines.py C:\AI\AlphaUltra_v1\scripts\news_validate.py C:\AI\AlphaUltra_v1\scripts\repair_filings_layout.py C:\AI\AlphaUltra_v1\scripts\tdnet_ingest_stub.py C:\AI\AlphaUltra_v1\scripts\validate_filings.py C:\AI\AlphaUltra_v1\scripts\__init__.py C:\AI\AlphaUltra_v1\scripts\clean_venv.ps1 C:\AI\AlphaUltra_v1\scripts\diagnose_yahoo.ps1 C:\AI\AlphaUltra_v1\scripts\env_use_py311.ps1 C:\AI\AlphaUltra_v1\scripts\run_day1_2.ps1 C:\AI\AlphaUltra_v1\scripts\run_day4_5.ps1 C:\AI\AlphaUltra_v1\scripts\run_day6_7.ps1 C:\AI\AlphaUltra_v1\scripts\share_logs.ps1 C:\AI\AlphaUltra_v1\utils\calendar_utils.py C:\AI\AlphaUltra_v1\utils\io_utils.py C:\AI\AlphaUltra_v1\utils\log_utils.py C:\AI\AlphaUltra_v1\utils\sec_utils.py C:\AI\AlphaUltra_v1\utils\__init__.py C:\AI\AlphaUltra_v1\data\raw\prices\7203.T.parquet C:\AI\AlphaUltra_v1\data\raw\prices\9984.T.parquet C:\AI\AlphaUltra_v1\data\raw\prices\AAPL.parquet C:\AI\AlphaUltra_v1\data\raw\prices\MSFT.parquet C:\AI\AlphaUltra_v1\data\raw\prices\SPY.parquet C:\AI\AlphaUltra_v1\data\proc\adj_prices\7203.T.parquet C:\AI\AlphaUltra_v1\data\proc\adj_prices\9984.T.parquet C:\AI\AlphaUltra_v1\data\proc\adj_prices\AAPL.parquet C:\AI\AlphaUltra_v1\data\proc\adj_prices\MSFT.parquet C:\AI\AlphaUltra_v1\data\proc\adj_prices\SPY.parquet C:\AI\AlphaUltra_v1\data\proc\labels\relative_returns.parquet' を受け入れる位置指定パラメーターが見つかりません。"
+>> 終了エラー(Compress-Archive): "引数 '+C:\AI\AlphaUltra_v1\reports\checks\last_run.log C:\AI\AlphaUltra_v1\reports\checks\run_day1_2.log C:\AI\AlphaUltra_v1\reports\checks\session_20250829_142410.log C:\AI\AlphaUltra_v1\reports\checks\edinet_summary.csv C:\AI\AlphaUltra_v1\reports\checks\filings_summary.csv C:\AI\AlphaUltra_v1\reports\checks\news_summary.csv C:\AI\AlphaUltra_v1\reports\checks\relative_returns_summary.csv C:\AI\AlphaUltra_v1\reports\checks\edinet_status.txt C:\AI\AlphaUltra_v1\configs\base.yaml C:\AI\AlphaUltra_v1\configs\edinet.yaml C:\AI\AlphaUltra_v1\configs\filings.yaml C:\AI\AlphaUltra_v1\configs\news.yaml C:\AI\AlphaUltra_v1\configs\text.yaml C:\AI\AlphaUltra_v1\scripts\compute_adjusted.py C:\AI\AlphaUltra_v1\scripts\compute_relative.py C:\AI\AlphaUltra_v1\scripts\edgar_ingest.py C:\AI\AlphaUltra_v1\scripts\edinet_features_basic.py C:\AI\AlphaUltra_v1\scripts\edinet_ingest.py C:\AI\AlphaUltra_v1\scripts\edinet_ingest_stub.py C:\AI\AlphaUltra_v1\scripts\edinet_validate.py C:\AI\AlphaUltra_v1\scripts\filing_features_basic.py C:\AI\AlphaUltra_v1\scripts\ingest_prices_yf.py C:\AI\AlphaUltra_v1\scripts\make_filings_summary.py C:\AI\AlphaUltra_v1\scripts\make_share_summary.py C:\AI\AlphaUltra_v1\scripts\news_features_basic.py C:\AI\AlphaUltra_v1\scripts\news_ingest_headlines.py C:\AI\AlphaUltra_v1\scripts\news_validate.py C:\AI\AlphaUltra_v1\scripts\repair_filings_layout.py C:\AI\AlphaUltra_v1\scripts\tdnet_ingest_stub.py C:\AI\AlphaUltra_v1\scripts\validate_filings.py C:\AI\AlphaUltra_v1\scripts\__init__.py C:\AI\AlphaUltra_v1\scripts\clean_venv.ps1 C:\AI\AlphaUltra_v1\scripts\diagnose_yahoo.ps1 C:\AI\AlphaUltra_v1\scripts\env_use_py311.ps1 C:\AI\AlphaUltra_v1\scripts\run_day1_2.ps1 C:\AI\AlphaUltra_v1\scripts\run_day4_5.ps1 C:\AI\AlphaUltra_v1\scripts\run_day6_7.ps1 C:\AI\AlphaUltra_v1\scripts\share_logs.ps1 C:\AI\AlphaUltra_v1\utils\calendar_utils.py C:\AI\AlphaUltra_v1\utils\io_utils.py C:\AI\AlphaUltra_v1\utils\log_utils.py C:\AI\AlphaUltra_v1\utils\sec_utils.py C:\AI\AlphaUltra_v1\utils\__init__.py C:\AI\AlphaUltra_v1\data\raw\prices\7203.T.parquet C:\AI\AlphaUltra_v1\data\raw\prices\9984.T.parquet C:\AI\AlphaUltra_v1\data\raw\prices\AAPL.parquet C:\AI\AlphaUltra_v1\data\raw\prices\MSFT.parquet C:\AI\AlphaUltra_v1\data\raw\prices\SPY.parquet C:\AI\AlphaUltra_v1\data\proc\adj_prices\7203.T.parquet C:\AI\AlphaUltra_v1\data\proc\adj_prices\9984.T.parquet C:\AI\AlphaUltra_v1\data\proc\adj_prices\AAPL.parquet C:\AI\AlphaUltra_v1\data\proc\adj_prices\MSFT.parquet C:\AI\AlphaUltra_v1\data\proc\adj_prices\SPY.parquet C:\AI\AlphaUltra_v1\data\proc\labels\relative_returns.parquet' を受け入れる位置指定パラメーターが見つかりません。"
+引数 '+C:\AI\AlphaUltra_v1\reports\checks\last_run.log C:\AI\AlphaUltra_v1\reports\checks\run_day1_2.log C:\AI\AlphaUltra_v1\reports\checks\session_20250829_142410.log C:\AI\AlphaUltra_v1\reports\checks\edinet_summary.csv C:\AI\AlphaUltra_v1\reports\checks\filings_summary.csv C:\AI\AlphaUltra_v1\reports\checks\news_summary.csv C:\AI\AlphaUltra_v1\reports\checks\relative_returns_summary.csv C:\AI\AlphaUltra_v1\reports\checks\edinet_status.txt C:\AI\AlphaUltra_v1\configs\base.yaml C:\AI\AlphaUltra_v1\configs\edinet.yaml C:\AI\AlphaUltra_v1\configs\filings.yaml C:\AI\AlphaUltra_v1\configs\news.yaml C:\AI\AlphaUltra_v1\configs\text.yaml C:\AI\AlphaUltra_v1\scripts\compute_adjusted.py C:\AI\AlphaUltra_v1\scripts\compute_relative.py C:\AI\AlphaUltra_v1\scripts\edgar_ingest.py C:\AI\AlphaUltra_v1\scripts\edinet_features_basic.py C:\AI\AlphaUltra_v1\scripts\edinet_ingest.py C:\AI\AlphaUltra_v1\scripts\edinet_ingest_stub.py C:\AI\AlphaUltra_v1\scripts\edinet_validate.py C:\AI\AlphaUltra_v1\scripts\filing_features_basic.py C:\AI\AlphaUltra_v1\scripts\ingest_prices_yf.py C:\AI\AlphaUltra_v1\scripts\make_filings_summary.py C:\AI\AlphaUltra_v1\scripts\make_share_summary.py C:\AI\AlphaUltra_v1\scripts\news_features_basic.py C:\AI\AlphaUltra_v1\scripts\news_ingest_headlines.py C:\AI\AlphaUltra_v1\scripts\news_validate.py C:\AI\AlphaUltra_v1\scripts\repair_filings_layout.py C:\AI\AlphaUltra_v1\scripts\tdnet_ingest_stub.py C:\AI\AlphaUltra_v1\scripts\validate_filings.py C:\AI\AlphaUltra_v1\scripts\__init__.py C:\AI\AlphaUltra_v1\scripts\clean_venv.ps1 C:\AI\AlphaUltra_v1\scripts\diagnose_yahoo.ps1 C:\AI\AlphaUltra_v1\scripts\env_use_py311.ps1 C:\AI\AlphaUltra_v1\scripts\run_day1_2.ps1 C:\AI\AlphaUltra_v1\scripts\run_day4_5.ps1 C:\AI\AlphaUltra_v1\scripts\run_day6_7.ps1 C:\AI\AlphaUltra_v1\scripts\share_logs.ps1 C:\AI\AlphaUltra_v1\utils\calendar_utils.py C:\AI\AlphaUltra_v1\utils\io_utils.py C:\AI\AlphaUltra_v1\utils\log_utils.py C:\AI\AlphaUltra_v1\utils\sec_utils.py C:\AI\AlphaUltra_v1\utils\__init__.py C:\AI\AlphaUltra_v1\data\raw\prices\7203.T.parquet C:\AI\AlphaUltra_v1\data\raw\prices\9984.T.parquet C:\AI\AlphaUltra_v1\data\raw\prices\AAPL.parquet C:\AI\AlphaUltra_v1\data\raw\prices\MSFT.parquet C:\AI\AlphaUltra_v1\data\raw\prices\SPY.parquet C:\AI\AlphaUltra_v1\data\proc\adj_prices\7203.T.parquet C:\AI\AlphaUltra_v1\data\proc\adj_prices\9984.T.parquet C:\AI\AlphaUltra_v1\data\proc\adj_prices\AAPL.parquet C:\AI\AlphaUltra_v1\data\proc\adj_prices\MSFT.parquet C:\AI\AlphaUltra_v1\data\proc\adj_prices\SPY.parquet C:\AI\AlphaUltra_v1\data\proc\labels\relative_returns.parquet' を受け入れる位置指定パラメーターが見つかりません。
+Compress-Archive : 引数 '+C:\AI\AlphaUltra_v1\reports\checks\last_run.log C:\AI\AlphaUltra_v1\reports\c
+hecks\run_day1_2.log C:\AI\AlphaUltra_v1\reports\checks\session_20250829_142410.log C:\AI\AlphaUltra_v1
+\reports\checks\edinet_summary.csv C:\AI\AlphaUltra_v1\reports\checks\filings_summary.csv C:\AI\AlphaUl
+tra_v1\reports\checks\news_summary.csv C:\AI\AlphaUltra_v1\reports\checks\relative_returns_summary.csv
+C:\AI\AlphaUltra_v1\reports\checks\edinet_status.txt C:\AI\AlphaUltra_v1\configs\base.yaml C:\AI\AlphaU
+ltra_v1\configs\edinet.yaml C:\AI\AlphaUltra_v1\configs\filings.yaml C:\AI\AlphaUltra_v1\configs\news.y
+aml C:\AI\AlphaUltra_v1\configs\text.yaml C:\AI\AlphaUltra_v1\scripts\compute_adjusted.py C:\AI\AlphaUl
+tra_v1\scripts\compute_relative.py C:\AI\AlphaUltra_v1\scripts\edgar_ingest.py C:\AI\AlphaUltra_v1\scri
+pts\edinet_features_basic.py C:\AI\AlphaUltra_v1\scripts\edinet_ingest.py C:\AI\AlphaUltra_v1\scripts\e
+dinet_ingest_stub.py C:\AI\AlphaUltra_v1\scripts\edinet_validate.py C:\AI\AlphaUltra_v1\scripts\filing_
+features_basic.py C:\AI\AlphaUltra_v1\scripts\ingest_prices_yf.py C:\AI\AlphaUltra_v1\scripts\make_fili
+ngs_summary.py C:\AI\AlphaUltra_v1\scripts\make_share_summary.py C:\AI\AlphaUltra_v1\scripts\news_featu
+res_basic.py C:\AI\AlphaUltra_v1\scripts\news_ingest_headlines.py C:\AI\AlphaUltra_v1\scripts\news_vali
+date.py C:\AI\AlphaUltra_v1\scripts\repair_filings_layout.py C:\AI\AlphaUltra_v1\scripts\tdnet_ingest_s
+tub.py C:\AI\AlphaUltra_v1\scripts\validate_filings.py C:\AI\AlphaUltra_v1\scripts\__init__.py C:\AI\Al
+phaUltra_v1\scripts\clean_venv.ps1 C:\AI\AlphaUltra_v1\scripts\diagnose_yahoo.ps1 C:\AI\AlphaUltra_v1\s
+cripts\env_use_py311.ps1 C:\AI\AlphaUltra_v1\scripts\run_day1_2.ps1 C:\AI\AlphaUltra_v1\scripts\run_day
+4_5.ps1 C:\AI\AlphaUltra_v1\scripts\run_day6_7.ps1 C:\AI\AlphaUltra_v1\scripts\share_logs.ps1 C:\AI\Alp
+haUltra_v1\utils\calendar_utils.py C:\AI\AlphaUltra_v1\utils\io_utils.py C:\AI\AlphaUltra_v1\utils\log_
+utils.py C:\AI\AlphaUltra_v1\utils\sec_utils.py C:\AI\AlphaUltra_v1\utils\__init__.py C:\AI\AlphaUltra_
+v1\data\raw\prices\7203.T.parquet C:\AI\AlphaUltra_v1\data\raw\prices\9984.T.parquet C:\AI\AlphaUltra_v
+1\data\raw\prices\AAPL.parquet C:\AI\AlphaUltra_v1\data\raw\prices\MSFT.parquet C:\AI\AlphaUltra_v1\dat
+a\raw\prices\SPY.parquet C:\AI\AlphaUltra_v1\data\proc\adj_prices\7203.T.parquet C:\AI\AlphaUltra_v1\da
+ta\proc\adj_prices\9984.T.parquet C:\AI\AlphaUltra_v1\data\proc\adj_prices\AAPL.parquet C:\AI\AlphaUltr
+a_v1\data\proc\adj_prices\MSFT.parquet C:\AI\AlphaUltra_v1\data\proc\adj_prices\SPY.parquet C:\AI\Alpha
+Ultra_v1\data\proc\labels\relative_returns.parquet' を受け入れる位置指定パラメーターが見つかりません。
+発生場所 C:\AI\AlphaUltra_v1\scripts\share_logs.ps1:33 文字:13
++ if($files){ Compress-Archive -Path @($envFile)+$files -DestinationPat ...
++             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidArgument: (:) [Compress-Archive]、ParentContainsErrorRecordExcepti
+    on
+    + FullyQualifiedErrorId : PositionalParameterNotFound,Compress-Archive
+
+PS C:\AI\AlphaUltra_v1> Set-Location C:\AI\AlphaUltra_v1
+PS C:\AI\AlphaUltra_v1> @'
+Param([string]$tag=$(Get-Date -Format yyyyMMdd_HHmmss))
+Set-StrictMode -Version Latest; $ErrorActionPreference="Stop"
+
+$root=(Get-Location).Path
+$checks="$root\reports\checks"; $share="$root\reports\share"
+New-Item -ItemType Directory -Force $checks,$share | Out-Null
+
+# 環境スナップショット
+$envFile="$checks\env_$tag.txt"
+$sec = if($env:SEC_USER_AGENT){"********"} else {"<empty>"}
+$edn = if($env:EDINET_API_KEY) {"********"} else {"<empty>"}
+$py  = if(Test-Path .\.venv\Scripts\python.exe){ & .\.venv\Scripts\python.exe -V } else {"<none>"}
+$pip = if(Test-Path .\.venv\Scripts\pip.exe){    & .\.venv\Scripts\pip.exe -V    } else {"<none>"}
+$pl  = if(Test-Path .\.venv\Scripts\pip.exe){ (& .\.venv\Scripts\pip.exe list) -join "`r`n" } else {"<none>"}
+@"
+root=$root
+date=$(Get-Date -Format s)
+git_origin=$(git remote get-url origin 2>$null)
+python=$py
+pip=$pip
+SEC_USER_AGENT=$sec
+EDINET_API_KEY=$edn
+
+### pip list
+$pl
+"@ | Set-Content -Encoding UTF8 $envFile
+
+# 収集
+$globs=@(
+  "$checks\*.log","$checks\*summary*.csv","$checks\*status*.txt",
+  "configs\*.yaml","scripts\*.py","scripts\*.ps1","utils\*.py",
+  "data\raw\prices\*.parquet","data\proc\adj_prices\*.parquet",
+  "data\proc\labels\*.parquet","data\proc\features_text\*.parquet"
+)
+$files = foreach($g in $globs){ Get-ChildItem $g -ErrorAction SilentlyContinue } |
+         Select-Object -Expand FullName -Unique
+
+$paths = @()
+$paths += $envFile
+if($files){ $paths += $files | Where-Object { Test-Path $_ } }
+
+$zip="reports\share\debug_$tag.zip"
+Compress-Archive -LiteralPath $paths -DestinationPath $zip -Force
+Write-Host "ZIP -> $zip"
+
+# Git 共有（失敗時はZIPパスのみ表示）
+try{
+  git add $zip,$envFile | Out-Null
+  git commit -m "chore(debug): logs pack $tag" | Out-Null
+  git push | Out-Null
+  $sha=(git rev-parse HEAD).Trim()
+  $remote=(git remote get-url origin)
+  if($remote -match 'github\.com[:/](.+?)/(.+?)(\.git)?$'){ $owner=$Matches[1]; $name=$Matches[2] }
+  $zipRel = ($zip.Substring($root.Length+1)) -replace '\\','/'
+  Write-Host ("COMMIT: https://github.com/{0}/{1}/commit/{2}" -f $owner,$name,$sha)
+  Write-Host ("ZIP:    https://github.com/{0}/{1}/blob/{2}/{3}" -f $owner,$name,$sha,$zipRel)
+}catch{
+  Write-Warning "git push skipped. Share local ZIP: $zip"
+}
+'@ | Set-Content -Encoding UTF8 .\scripts\share_logs.ps1
+PS C:\AI\AlphaUltra_v1> .\scripts\share_logs.ps1
+>> 終了エラー(): "発生場所 C:\AI\AlphaUltra_v1\scripts\share_logs.ps1:35 文字:82
++ ... ach($g in $globs){ Get-ChildItem $g -ErrorAction SilentlyContinue } |
++                                                                         ~
+空のパイプ要素は許可されていません。"
+発生場所 C:\AI\AlphaUltra_v1\scripts\share_logs.ps1:35 文字:82
++ ... ach($g in $globs){ Get-ChildItem $g -ErrorAction SilentlyContinue } |
++                                                                         ~
+空のパイプ要素は許可されていません。
+発生場所 C:\AI\AlphaUltra_v1\scripts\share_logs.ps1:35 文字:82
++ ... ach($g in $globs){ Get-ChildItem $g -ErrorAction SilentlyContinue } |
++                                                                         ~
+空のパイプ要素は許可されていません。
+    + CategoryInfo          : ParserError: (:) [], ParentContainsErrorRecordException
+    + FullyQualifiedErrorId : EmptyPipeElement
+
+PS C:\AI\AlphaUltra_v1> Set-Location C:\AI\AlphaUltra_v1
+PS C:\AI\AlphaUltra_v1> @'
+Param([string]$tag=$(Get-Date -Format yyyyMMdd_HHmmss))
+Set-StrictMode -Version Latest; $ErrorActionPreference="Stop"
+
+$root=(Get-Location).Path
+$checks="$root\reports\checks"; $share="$root\reports\share"
+New-Item -ItemType Directory -Force $checks,$share | Out-Null
+
+# 環境スナップショット
+$envFile="$checks\env_$tag.txt"
+$sec = if($env:SEC_USER_AGENT){"********"} else {"<empty>"}
+$edn = if($env:EDINET_API_KEY) {"********"} else {"<empty>"}
+$pyV = if(Test-Path .\.venv\Scripts\python.exe){ & .\.venv\Scripts\python.exe -V } else {"<none>"}
+$pipV= if(Test-Path .\.venv\Scripts\pip.exe){    & .\.venv\Scripts\pip.exe -V    } else {"<none>"}
+$pl  = if(Test-Path .\.venv\Scripts\pip.exe){ (& .\.venv\Scripts\pip.exe list) -join "`r`n" } else {"<none>"}
+@"
+root=$root
+date=$(Get-Date -Format s)
+git_origin=$(git remote get-url origin 2>$null)
+python=$pyV
+pip=$pipV
+SEC_USER_AGENT=$sec
+EDINET_API_KEY=$edn
+
+### pip list
+$pl
+"@ | Set-Content -Encoding UTF8 $envFile
+
+# 収集
+$globs=@(
+  "$checks\*.log","$checks\*summary*.csv","$checks\*status*.txt",
+  "configs\*.yaml","scripts\*.py","scripts\*.ps1","utils\*.py",
+  "data\raw\prices\*.parquet","data\proc\adj_prices\*.parquet",
+  "data\proc\labels\*.parquet","data\proc\features_text\*.parquet"
+)
+
+$files=@()
+foreach($g in $globs){
+  $items = Get-ChildItem -Path $g -ErrorAction SilentlyContinue
+  if($items){ $files += $items }
+}
+$files = $files | Select-Object -Expand FullName -Unique
+
+$paths=@($envFile)
+if($files){ $paths += $files | Where-Object { Test-Path $_ } }
+
+$zip="reports\share\debug_$tag.zip"
+Compress-Archive -LiteralPath $paths -DestinationPath $zip -Force
+Write-Host "ZIP -> $zip"
+
+# Git 共有（失敗時はZIPパスのみ表示）
+try{
+  git add $zip,$envFile | Out-Null
+  git commit -m "chore(debug): logs pack $tag" | Out-Null
+  git push | Out-Null
+  $sha=(git rev-parse HEAD).Trim()
+  $remote=(git remote get-url origin)
+  if($remote -match 'github\.com[:/](.+?)/(.+?)(\.git)?$'){ $owner=$Matches[1]; $name=$Matches[2] }
+  $zipRel = ($zip.Substring($root.Length+1)) -replace '\\','/'
+  Write-Host ("COMMIT: https://github.com/{0}/{1}/commit/{2}" -f $owner,$name,$sha)
+  Write-Host ("ZIP:    https://github.com/{0}/{1}/blob/{2}/{3}" -f $owner,$name,$sha,$zipRel)
+}catch{
+  Write-Warning "git push skipped. Share local ZIP: $zip"
+}
+'@ | Set-Content -Encoding UTF8 .\scripts\share_logs.ps1
+PS C:\AI\AlphaUltra_v1> .\scripts\share_logs.ps1
+PS C:\AI\AlphaUltra_v1> 終了エラー(ZipArchiveHelper): "ユーザー設定変数 "ErrorActionPreference" または共通パラメーターが Stop に設定されているため、実行中のコマンドが停止しました。別のプロセスで使用されているため、プロセスはファイル 'C:\AI\AlphaUltra_v1\reports\checks\session_20250829_142410.log' にアクセスできません。"
+PS C:\AI\AlphaUltra_v1> 終了エラー(ZipArchiveHelper): "ユーザー設定変数 "ErrorActionPreference" または共通パラメーターが Stop に設定されているため、実行中のコマンドが停止しました。別のプロセスで使用されているため、プロセスはファイル 'C:\AI\AlphaUltra_v1\reports\checks\session_20250829_142410.log' にアクセスできません。"
+>> 終了エラー(ZipArchiveHelper): "ユーザー設定変数 "ErrorActionPreference" または共通パラメーターが Stop に設定されているため、実行中のコマンドが停止しました。別のプロセスで使用されているため、プロセスはファイル 'C:\AI\AlphaUltra_v1\reports\checks\session_20250829_142410.log' にアクセスできません。"
+>> 終了エラー(ZipArchiveHelper): "ユーザー設定変数 "ErrorActionPreference" または共通パラメーターが Stop に設定されているため、実行中のコマンドが停止しました。別のプロセスで使用されているため、プロセスはファイル 'C:\AI\AlphaUltra_v1\reports\checks\session_20250829_142410.log' にアクセスできません。"
+PS C:\AI\AlphaUltra_v1> 終了エラー(ZipArchiveHelper): "ユーザー設定変数 "ErrorActionPreference" または共通パラメーターが Stop に設定されているため、実行中のコマンドが停止しました。別のプロセスで使用されているため、プロセスはファイル 'C:\AI\AlphaUltra_v1\reports\checks\session_20250829_142410.log' にアクセスできません。"
+>> 終了エラー(ZipArchiveHelper): "ユーザー設定変数 "ErrorActionPreference" または共通パラメーターが Stop に設定されているため、実行中のコマンドが停止しました。別のプロセスで使用されているため、プロセスはファイル 'C:\AI\AlphaUltra_v1\reports\checks\session_20250829_142410.log' にアクセスできません。"
+>> 終了エラー(ZipArchiveHelper): "ユーザー設定変数 "ErrorActionPreference" または共通パラメーターが Stop に設定されているため、実行中のコマンドが停止しました。別のプロセスで使用されているため、プロセスはファイル 'C:\AI\AlphaUltra_v1\reports\checks\session_20250829_142410.log' にアクセスできません。"
+ユーザー設定変数 "ErrorActionPreference" または共通パラメーターが Stop に設定されているため、実行中のコマンドが停止しました。別のプロセスで使用されているため、プロセスはファイル 'C:\AI\AlphaUltra_v1\reports\checks\session_20250829_142410.log' にアクセスできません。
+ZipArchiveHelper : 別のプロセスで使用されているため、プロセスはファイル 'C:\AI\AlphaUltra_v1\reports\ch
+ecks\session_20250829_142410.log' にアクセスできません。
+発生場所 C:\WINDOWS\system32\WindowsPowerShell\v1.0\Modules\Microsoft.PowerShell.Archive\Microsoft.Powe
+rShell.Archive.psm1:632 文字:30
++ ... sArchived = ZipArchiveHelper $sourceFilePaths $destinationPath $compr ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : PermissionDenied: (C:\AI\AlphaUltr...0829_142410.log:String) [Write-Erro
+   r], IOException
+    + FullyQualifiedErrorId : CompressArchiveUnauthorizedAccessError,ZipArchiveHelper
+
+PS C:\AI\AlphaUltra_v1> Stop-Transcript
+**********************
+Windows PowerShell トランスクリプト終了
+終了時刻: 20250829144534
+**********************

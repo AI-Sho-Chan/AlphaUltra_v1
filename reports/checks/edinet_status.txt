@@ -1,0 +1,1 @@
+base=https://api.edinet-fsa.go.jp/api/v2 collected=1282
