@@ -1,0 +1,28 @@
+﻿{
+    "pivot":  "TDNET-first",
+    "tracks":  {
+                   "A":  "JP Growth+JP Standard (high-liquidity), US Russell 2000 Growth+NASDAQ (high-liquidity)",
+                   "B":  "S\u0026P500 + JP Prime"
+               },
+    "liquidity_thresholds":  {
+                                 "JP_ADDV_3M_min":  "100,000,000 JPY",
+                                 "US_ADDV_3M_min":  "2,000,000 USD",
+                                 "JP_price_min":  "200 JPY",
+                                 "US_price_min":  "2 USD",
+                                 "spread_median_max":  "50 bps"
+                             },
+    "baseline_pre_pivot":  {
+                               "y_2x":  {
+                                            "rows":  14524,
+                                            "features":  8,
+                                            "cv_auc_roc_mean":  0.6956,
+                                            "cv_auc_pr_mean":  0.1304,
+                                            "cv_p_at_k_mean":  0.122
+                                        }
+                           },
+    "notes":  [
+                  "Leakage ban; T+1 open alignment; Purged/Embargo CV; Cluster purge; WF; DSR; Isotonic calibration to PPV\u003e=80%"
+              ],
+    "timestamp":  "2025-08-31T01:45:32Z",
+    "commit_sha":  "TO_BE_FILLED_AFTER_COMMIT"
+}
