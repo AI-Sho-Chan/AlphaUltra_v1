@@ -94,6 +94,11 @@ def process_csv(csv_path: Path):
         code4 = extract_code4(row.get(col_code, ""))
         if not code4:
             continue
+        try:
+            if int(code4) < 1300:
+                continue
+        except Exception:
+            continue
         title = str(row.get(col_title, "")).strip() if col_title else ""
         hm = str(row.get(col_time, "")).strip() if col_time else ""
         url = str(row.get(col_url, "")).strip() if col_url else ""
@@ -130,4 +135,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

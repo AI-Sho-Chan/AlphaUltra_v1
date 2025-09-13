@@ -1,0 +1,14 @@
+paths:
+  root: "data/raw/news"
+  reports: "reports/checks"
+sources:
+  - name: "Reuters Business"
+    url: "https://feeds.reuters.com/reuters/businessNews"
+  - name: "Reuters Markets"
+    url: "https://feeds.reuters.com/reuters/marketsNews"
+  - name: "Yahoo Japan Top"
+    url: "https://news.yahoo.co.jp/rss/topics/top-picks.xml"
+  - name: "Nikkei (Topics)"
+    url: "https://www.nikkei.com/rss/category/top.xml"
+universe_hint:
+  tickers: ["AAPL","MSFT","7203.T","9984.T","SPY"]

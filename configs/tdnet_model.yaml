@@ -1,0 +1,25 @@
+﻿paths:
+  tdnet_features: data/proc/features_tdnet/tdnet_event_features.parquet
+  adj_root: data/proc/adj_prices
+  dataset_root: data/proc/dataset
+  labels_root: data/proc/labels
+benchmarks:
+  JP: 1306.T   # TOPIX ETF
+  US: SPY      # S&P500 ETF
+labels:
+  y2x:
+    horizon_days: 252
+    ratio: 2.0
+expand_prices:
+  lookback_start: "2012-01-01"
+  top_n_jp: 200
+expand_prices:
+  lookback_start: '2010-01-01'
+  top_n_jp: 80
+  blocklist:
+    - 1329.T
+    - 1349.T
+    - 1557.T
+    - 1671.T
+    - 1672.T
+    - 2070.T

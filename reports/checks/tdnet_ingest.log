@@ -1,0 +1,11 @@
+﻿cmd :   File "C:\AI\AlphaUltra_v1\scripts\tdnet_ingest.py", line 23
+発生場所 行:1 文字:1
++ cmd /c "$PY scripts\tdnet_ingest.py   --config configs\tdnet.yaml --i ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (  File "C:\AI\A...st.py", line 23:String) [], RemoteExcept 
+   ion
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+    code = pick(row, ["code","驫俶氛繧ｳ繝ｼ繝・,"險ｼ蛻ｸ繧ｳ繝ｼ繝・,"繧ｳ繝ｼ繝・])
+                                                  ^
+SyntaxError: invalid character '・' (U+30FB)

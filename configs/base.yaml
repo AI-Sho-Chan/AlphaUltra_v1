@@ -1,0 +1,16 @@
+start: "2010-01-01"
+end: "2025-08-28"
+universe:
+  us: ["AAPL", "MSFT"]
+  jp: ["7203.T", "9984.T"]
+benchmark:
+  spx: "SPY"   # use ETF to avoid caret/endpoint issues
+fx:
+  anchor_calendar: "XNYS"
+  pairs: ["JPY=X"]  # robust Yahoo FX symbol
+paths:
+  raw: "data/raw"
+  proc: "data/proc"
+  reports: "reports/checks"
+vendor:
+  use_vendor_adjclose_first: true

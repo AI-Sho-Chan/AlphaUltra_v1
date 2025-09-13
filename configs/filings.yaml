@@ -1,0 +1,17 @@
+# Filings config
+sec:
+  user_agent_env: "SEC_USER_AGENT"   # 必須: 例 youremail@example.com AlphaUltra/1.0
+  base_url: "https://data.sec.gov"
+  rate_limit_per_sec: 9              # SEC推奨: 10/sec 以下
+universe:
+  us_cik:
+    # 形式: TICKER: CIK(10桁ゼロ詰め)
+    AAPL: "0000320193"
+    MSFT: "0000789019"
+edgar:
+  forms_default: ["10-K","10-Q","8-K"]
+  start: "2010-01-01"
+  end: "2025-08-28"
+paths:
+  raw: "data/raw"
+  reports: "reports/checks"

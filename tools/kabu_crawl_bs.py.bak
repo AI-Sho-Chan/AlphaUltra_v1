@@ -1,0 +1,112 @@
+# -*- coding: utf-8 -*-
+import os, csv, time, random
+from pathlib import Path
+import requests as rq
+from bs4 import BeautifulSoup
+
+BASE = Path(r"C:\AI\AlphaUltra_v1\data\raw\kabutan")
+DBG  = Path(r"C:\AI\AlphaUltra_v1\reports\debug")
+BASE.mkdir(parents=True, exist_ok=True); DBG.mkdir(parents=True, exist_ok=True)
+
+def build_session():
+    ck = os.environ.get("KABUTAN_COOKIE","").strip()
+    if not ck:
+        raise SystemExit("[crawl] KABUTAN_COOKIE not set")
+    s = rq.Session()
+    s.headers.update({"User-Agent":"alphaai-kabutan-crawler","Accept-Language":"ja-JP"})
+    # Cookieはヘッダに入れず、Sessionへ安全にセット（latin-1回避）
+    for kv in ck.split(";"):
+        if "=" in kv:
+            k,v = kv.strip().split("=",1)
+            s.cookies.set(k.strip(), v.strip(), domain="kabutan.jp", path="/")
+    return s
+
+def fetch_html(sess, d:str, page:int, tries:int=6):
+    back=1.0
+    url = f"https://kabutan.jp/disclosures/?date={d}&page={page}"
+    for k in range(tries):
+        try:
+            r = sess.get(url, timeout=30)
+            if r.status_code==200: return r.text
+            if r.status_code in (429,503):
+                time.sleep(back + random.uniform(0,0.5)); back=min(back*2,16); continue
+            r.raise_for_status()
+        except Exception:
+            if k==tries-1: raise
+            time.sleep(back + random.uniform(0,0.5)); back=min(back*2,16)
+    return ""
+
+def parse_rows(html:str):
+    soup = BeautifulSoup(html, "lxml")
+    rows = []
+    # 新UI
+    for card in soup.select("[data-code]"):
+        code = (card.get("data-code") or "").strip()
+        a = card.select_one('a[href*="/disclosures/"]')
+        title = (a.get_text(strip=True) if a else "").strip()
+        href  = (a.get("href") or "").strip() if a else ""
+        t = card.find("time")
+        dt = t.get("datetime") if (t and t.has_attr("datetime")) else ""
+        if code.isdigit() and len(code)==4 and title:
+            url = "https://kabutan.jp"+href if href.startswith("/") else href
+            rows.append((code, dt, title, url))
+    # 旧UI fallback
+    if not rows:
+        for tr in soup.select("table tr"):
+            tds = tr.find_all("td")
+            if len(tds) >= 3:
+                code_txt = (tds[0].get_text(strip=True) or "")
+                code = "".join(ch for ch in code_txt if ch.isdigit())[-4:]
+                a = tds[2].find("a"); title = (a.get_text(strip=True) if a else "").strip()
+                href = (a.get("href") or "").strip() if a else ""
+                if code.isdigit() and len(code)==4 and title:
+                    url = "https://kabutan.jp"+href if href.startswith("/") else href
+                    dt = tds[1].get_text(strip=True)
+                    rows.append((code, dt, title, url))
+    return rows
+
+def crawl_day(d:str, sleep:float=0.25, max_pages:int=0):
+    sess = build_session()
+    outdir = BASE/d; outdir.mkdir(parents=True, exist_ok=True)
+    dst = outdir/"tdnet.csv"
+    if not dst.exists():
+        with dst.open("w", newline="", encoding="utf-8-sig") as f:
+            csv.writer(f).writerow(["コード","掲載日時","タイトル","URL"])
+    total = 0; page = 1; last_sig = None; empty_streak = 0
+    while True:
+        html = fetch_html(sess, d, page)
+        if not html:
+            (DBG/f"kabutan_{d}_p{page}.html").write_text("", encoding="utf-8"); break
+        rows = parse_rows(html)
+        if not rows:
+            (DBG/f"kabutan_{d}_p{page}.html").write_text(html, encoding="utf-8")
+            empty_streak += 1
+            if empty_streak >= 2: break
+            page += 1; time.sleep(sleep); continue
+        empty_streak = 0
+        sig = rows[0]
+        if sig == last_sig: break
+        last_sig = sig
+        with dst.open("a", newline="", encoding="utf-8-sig") as f:
+            csv.writer(f).writerows(rows)
+        total += len(rows); page += 1
+        if max_pages and page > max_pages: break
+        time.sleep(sleep)
+    return total, page-1
+
+if __name__=="__main__":
+    import argparse
+    from datetime import date, timedelta
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--start", required=True)
+    ap.add_argument("--end",   required=True)
+    ap.add_argument("--sleep", type=float, default=0.25)
+    ap.add_argument("--max-pages", type=int, default=0)
+    a = ap.parse_args()
+    cur = date.fromisoformat(a.start); end = date.fromisoformat(a.end)
+    while cur <= end:
+        d = cur.isoformat()
+        rows, pages = crawl_day(d, a.sleep, a.max_pages)
+        print(f"[kabu_crawl] {d} pages={pages} rows={rows} -> {(BASE/d/'tdnet.csv')}")
+        cur += timedelta(days=1)
+

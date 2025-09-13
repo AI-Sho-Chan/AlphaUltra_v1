@@ -1,0 +1,9 @@
+{
+  "task": "y_2x",
+  "rows": 14524,
+  "features": 8,
+  "cv_folds": 5,
+  "cv_auc_roc_mean": 0.6955839775670815,
+  "cv_auc_pr_mean": 0.1304216512658674,
+  "cv_p_at_k_mean": 0.12200000000000003
+}

@@ -1,0 +1,146 @@
+﻿# -*- coding: utf-8 -*-
+import argparse, pathlib, os, time, re
+from urllib.parse import urljoin
+import requests
+from bs4 import BeautifulSoup
+from datetime import datetime, timedelta
+import pandas as pd
+
+ROOT=pathlib.Path(r"C:\AI\AlphaUltra")
+RAW = ROOT/"data/raw/kabutan"
+LOG = ROOT/"logs"
+BASE= "https://kabutan.jp/disclosures"
+
+def sess():
+    envp = ROOT/".env.local"
+    if envp.exists():
+        for line in envp.read_text(encoding="utf-8", errors="ignore").splitlines():
+            if "=" in line and not line.strip().startswith("#"):
+                k,v = line.split("=",1)
+                if k.strip()=="KABUTAN_COOKIE":
+                    os.environ.setdefault("KABUTAN_COOKIE", v.strip())
+    s=requests.Session()
+    s.headers.update({
+        "User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123 Safari/537.36",
+        "Accept-Language":"ja,en;q=0.8"
+    })
+    ck=os.getenv("KABUTAN_COOKIE","")
+    if ck: s.headers.update({"Cookie": ck})
+    print(f"[crawl] cookie={'ON' if ck else 'OFF'}")
+    return s
+
+def fetch(s, url):
+    r=s.get(url, timeout=20); r.raise_for_status(); return r.text
+
+def parse_rows(html, ymd):
+    """荳隕ｧ1繝壹・繧ｸ蛻・ｒ謚ｽ蜃ｺ縲り恭/譌･繧ｭ繝ｼ菴ｵ險倥りｩｳ邏ｰURL繧よ鏡縺・・""
+    soup = BeautifulSoup(html, "html.parser")
+    table = soup.select_one("table.stock_table") or soup.find("table")
+    rows = []
+    if not table: return rows, soup
+    body_rows = table.select("tbody > tr") or table.find_all("tr")
+    for tr in body_rows:
+        tds = tr.find_all("td")
+        if len(tds) < 5: 
+            continue
+        code    = tds[0].get_text(" ", strip=True)
+        company = tds[1].get_text(" ", strip=True)
+        cand    = [td.get_text(" ", strip=True) for td in tds[:5]]
+        category= cand[3] if len(cand)>3 else (cand[2] if len(cand)>2 else "")
+        title   = tds[4].get_text(" ", strip=True) if len(tds)>=5 else ""
+        ttag    = tr.find("time")
+        timetxt = ttag.get_text(" ", strip=True) if ttag else ""
+
+        # 隧ｳ邏ｰURL・・disclosures 繧貞性繧髱霸DF繧貞━蜈茨ｼ・        detail_url = ""
+        for a in tr.find_all("a", href=True):
+            href = a["href"]
+            if href and ("/disclosures" in href) and (not re.search(r"\.pdf$", href, re.I)):
+                detail_url = urljoin(BASE, href); break
+        if len(tds)>=5:
+            a = tds[4].find("a", href=True)
+            if a and not re.search(r"\.pdf$", a["href"], re.I):
+                detail_url = urljoin(BASE, a["href"])
+
+        # 豺ｻ莉榔DF
+        pdf_a = tr.find("a", href=re.compile(r"\.pdf$", re.I))
+        attach_url = urljoin(BASE, pdf_a["href"]) if (pdf_a and pdf_a.has_attr("href")) else ""
+
+        rec = {
+            # 闍ｱ繧ｭ繝ｼ
+            "date": ymd, "time": timetxt, "code": code, "company": company,
+            "category": category, "title": title, "url": detail_url, "attach_url": attach_url,
+            # 譌･繧ｭ繝ｼ
+            "譌･莉・: ymd, "譎ょ綾": timetxt, "繧ｳ繝ｼ繝・: code, "莨夂､ｾ": company,
+            "蛹ｺ蛻・: category, "繧ｿ繧､繝医Ν": title, "URL": detail_url, "豺ｻ莉篭RL": attach_url,
+        }
+        rows.append(rec)
+    return rows, soup
+
+def find_next_url(soup, current_url, page):
+    a = soup.find("a", attrs={"rel":"next"}) or soup.find("a", string=re.compile(r"(谺｡縺ｸ|谺｡|・桍竊・"))
+    if a and a.get("href"): return urljoin(current_url, a["href"])
+    base = current_url.split("date=")[-1].split("&")[0]
+    return f"{BASE}?date={base}&page={page+1}"
+
+def crawl_one_day(s, ymd, max_pages:int, per_page_sleep:float, save_html:int):
+    url = f"{BASE}?date={ymd}"
+    pages=0; seen=set(); seen_urls=set(); all_rows=[]
+    save_dir = LOG/"html"/ymd
+    while url and (max_pages==0 or pages<max_pages):
+        if url in seen_urls: break
+        seen_urls.add(url)
+        html = fetch(s, url)
+        if save_html and pages < save_html:
+            save_dir.mkdir(parents=True, exist_ok=True)
+            (save_dir/f"page_{pages+1}.html").write_text(html, encoding="utf-8")
+        rows, soup = parse_rows(html, ymd)
+        new=0
+        for r in rows:
+            key = ((r.get("url") or r.get("attach_url") or ""), r.get("time",""), r.get("code",""), r.get("title",""))
+            if key in seen: continue
+            seen.add(key); all_rows.append(r); new+=1
+        pages += 1
+        url = find_next_url(soup, url, pages)
+        time.sleep(per_page_sleep)
+        if new==0: break
+    return all_rows, pages
+
+def main():
+    ap=argparse.ArgumentParser()
+    ap.add_argument("--start", default="2013-09-01")
+    ap.add_argument("--end",   default="2025-08-20")
+    ap.add_argument("--sleep", type=float, default=0.3)
+    ap.add_argument("--max-pages", type=int, default=1)     # Quick=1 / Deep=0
+    ap.add_argument("--resume", action="store_true")
+    ap.add_argument("--force",  action="store_true")
+    ap.add_argument("--save-html", type=int, default=0)
+    args=ap.parse_args()
+
+    s=sess()
+    d0=datetime.fromisoformat(args.start); d1=datetime.fromisoformat(args.end)
+    cur=d0
+    RAW.mkdir(parents=True, exist_ok=True); LOG.mkdir(parents=True, exist_ok=True)
+    while cur<=d1:
+        ymd=cur.strftime("%Y-%m-%d")
+        outdir=RAW/ymd; outdir.mkdir(parents=True, exist_ok=True)
+        outcsv=outdir/"tdnet.csv"; tmpcsv=outdir/"tdnet.csv.tmp"
+        if args.resume and outcsv.exists() and not args.force:
+            print(f"[crawl] {ymd} skip (exists)")
+        else:
+            try:
+                rows, pages = crawl_one_day(s, ymd, args.max_pages, args.sleep, args.save_html)
+                if rows:
+                    pd.DataFrame(rows).to_csv(tmpcsv, index=False, encoding="utf-8-sig")
+                    tmpcsv.replace(outcsv)
+                    print(f"[crawl] {ymd} pages={pages if args.max_pages!=0 else '竏・} rows={len(rows)} -> {outcsv}")
+                else:
+                    print(f"[crawl] {ymd} no rows")
+            except Exception as e:
+                with open(LOG/"kabutan_crawl_errors.log","a",encoding="utf-8") as w:
+                    w.write(f"{ymd}|{e}\n")
+                print(f"[crawl] {ymd} error: {e}")
+        time.sleep(args.sleep); cur += timedelta(days=1)
+
+if __name__=="__main__":
+    main()
+

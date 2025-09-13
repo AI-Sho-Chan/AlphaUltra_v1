@@ -1,0 +1,9 @@
+{
+  "task": "hit_rel_3M_20p",
+  "rows": 14524,
+  "features": 7,
+  "cv_folds": 5,
+  "cv_auc_roc_mean": 0.5927714624809871,
+  "cv_auc_pr_mean": 0.10017136068781489,
+  "cv_p_at_k_mean": 0.10600000000000001
+}

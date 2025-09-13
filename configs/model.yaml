@@ -1,0 +1,29 @@
+paths:
+  adj_prices_dir: data/proc/adj_prices
+  text_dir: data/proc/features_text
+  labels_path: data/proc/labels/targets.parquet
+  out_dir: data/proc/model
+  reports_dir: reports/checks
+  features_text_dir: data/proc/features_text
+  dataset_dir: data/proc/dataset
+features:
+  include_quant: true
+  include_filing: true
+  include_edinet: true
+  include_news: true
+training:
+  task: y_2x
+  start_date: null
+  end_date: null
+  n_splits: 5
+  purge_days: 21
+  embargo_days: 5
+  topk_abs: 100
+lgbm:
+  num_leaves: 64
+  learning_rate: 0.05
+  n_estimators: 600
+  subsample: 0.9
+  colsample_bytree: 0.8
+  reg_lambda: 1.0
+  random_state: 42

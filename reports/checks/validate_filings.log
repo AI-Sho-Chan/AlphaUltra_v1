@@ -1,0 +1,13 @@
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\AI\AlphaUltra_v1\scripts\validate_filings.py", line 29, in <module>
+    main(a.config)
+  File "C:\AI\AlphaUltra_v1\scripts\validate_filings.py", line 22, in main
+    w.writerow(r)
+  File "C:\Users\PC_User\AppData\Local\Programs\Python\Python311\Lib\csv.py", line 154, in writerow
+    return self.writer.writerow(self._dict_to_list(rowdict))
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\PC_User\AppData\Local\Programs\Python\Python311\Lib\csv.py", line 149, in _dict_to_list
+    raise ValueError("dict contains fields not in fieldnames: "
+ValueError: dict contains fields not in fieldnames: 'companyName'

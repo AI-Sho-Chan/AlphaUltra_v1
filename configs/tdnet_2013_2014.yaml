@@ -1,0 +1,7 @@
+paths:
+  tdnet_raw: data/raw/tdnet
+  tdnet_features: data/proc/features_tdnet/tdnet_event_features.parquet
+params:
+  start_date: 2013-09-01
+  end_date:   2014-12-31
+

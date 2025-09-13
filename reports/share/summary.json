@@ -1,0 +1,25 @@
+{
+  "generated_at": "2025-08-28T22:31:41.709049Z",
+  "adj_files": [
+    {
+      "file": "7203.T.parquet",
+      "rows": 3828
+    },
+    {
+      "file": "9984.T.parquet",
+      "rows": 3828
+    },
+    {
+      "file": "AAPL.parquet",
+      "rows": 3938
+    },
+    {
+      "file": "MSFT.parquet",
+      "rows": 3938
+    },
+    {
+      "file": "SPY.parquet",
+      "rows": 3937
+    }
+  ]
+}

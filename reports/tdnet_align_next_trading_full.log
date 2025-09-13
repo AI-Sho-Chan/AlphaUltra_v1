@@ -1,0 +1,1 @@
+{"mode": "full", "panel_shape": [52492, 15], "tickers": 508, "price_coverage": 1.0, "date_min": "2014-01-01", "date_max": "2014-12-30", "out": "data\\proc\\dataset\\tdnet_panel_full.parquet", "features_rows_used": 52633, "features_date_min": "2014-01-01", "features_date_max": "2014-12-31", "window": {"start": "2014-01-01", "end": "2014-12-31"}}

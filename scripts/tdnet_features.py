@@ -41,9 +41,23 @@ def feature_rows_from_json(fp: Path):
         j = json.loads(fp.read_text(encoding="utf-8"))
     except Exception:
         return None
+    # Support two schemas:
+    #  A) {ticker, date, title, url_detail, event_type}
+    #  B) {code, datetime, title, url, source}
     t = j.get("ticker")
     d = j.get("date")
+    title = j.get("title") or ""
+    url_detail = j.get("url_detail") or j.get("url") or ""
     et = (j.get("event_type") or "other")
+    if (not t) and j.get("code"):
+        code = str(j.get("code")).strip()
+        if code.isdigit() and len(code) in (4,5):
+            t = f"{code}.T"
+    if (not d) and j.get("datetime"):
+        try:
+            d = str(j.get("datetime")).split()[0].replace("/","-")
+        except Exception:
+            d = None
     if not t or not d:
         # フォルダ名日付を使う
         m = re.search(r"(20\d{2})[\\/](\d{2})[\\/](\d{2})", str(fp))
@@ -64,7 +78,9 @@ def feature_rows_from_json(fp: Path):
         "novelty": 0.0,
         "tone_pos": int(et in {"guidance_up","div_up","buyback","order","product","earnings"}),
         "tone_neg": int(et in {"guidance_down","div_down","offering","lawsuit"}),
-        "tone_unc": 0
+        "tone_unc": 0,
+        "title": title,
+        "url_detail": url_detail
     }
 
 def main():
@@ -76,18 +92,22 @@ def main():
 
     rows = []
     for fp in iter_json_files(tdnet_root):
-        m = re.search(r"(20\d{2})[\\/](\d{2})[\\/](\d{2})", str(fp))
-        ymd_dt = _date.fromisoformat("-".join(m.groups())) if m else None
-        if start and ymd_dt and ymd_dt < start:  continue
-        if end   and ymd_dt and ymd_dt > end:   continue
         r = feature_rows_from_json(fp)
-        if r: rows.append(r)
+        if r:
+            rows.append(r)
 
     if not rows:
         print("[features] no rows. check data/raw/tdnet and date range"); sys.exit(0)
 
-    df = pd.DataFrame(rows).drop_duplicates(["ticker","date","event_type"])
+    # 2014年復旧では重複は温存（同一日・同一銘柄でも行ごとにイベント保持）
+    df = pd.DataFrame(rows)
     df["eff_date"] = (df["date"] + BDay(1)).dt.normalize()
+
+    # apply date window filter if provided
+    if start is not None:
+        df = df[df["date"] >= pd.to_datetime(start)].copy()
+    if end is not None:
+        df = df[df["date"] <= pd.to_datetime(end)].copy()
 
     # one-hot（event_type_XXXX）
     ohe = pd.get_dummies(df["event_type"], prefix="event_type", dtype="int8")

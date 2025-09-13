@@ -1,0 +1,79 @@
+﻿import argparse, pathlib, os, time, re, concurrent.futures as cf
+import pandas as pd
+from bs4 import BeautifulSoup
+try:
+    import requests
+except Exception:
+    requests=None
+
+ROOT=pathlib.Path(r"C:\\AI\\AlphaUltra_v1")
+RAW = ROOT/"data/raw/kabutan"
+BRZ = ROOT/"data/bronze/tdnet"
+
+def pick_detail_url(row):
+    # prefer non-PDF /disclosures detail url
+    for k in ("url","url_en","URL","隧ｳ邏ｰURL"):
+        u = str(row.get(k,"") or "").strip()
+        if u and ("/disclosures" in u) and (not u.lower().endswith(".pdf")):
+            return u
+    return ""
+
+def fetch_one(s, url):
+    try:
+        r=s.get(url, timeout=15, headers={"User-Agent":"Mozilla/5.0"}); r.raise_for_status()
+        soup=BeautifulSoup(r.text,"html.parser")
+        ttl=soup.find(["h1","h2"]); ttl=ttl.get_text(" ",strip=True) if ttl else ""
+        div=soup.find("div", class_=re.compile("(article|text|body|detail)",re.I)) or soup.find("section")
+        txt=div.get_text(" ",strip=True) if div else ""
+        return ttl[:512], txt[:2000]
+    except Exception:
+        return "",""
+
+def main():
+    ap=argparse.ArgumentParser()
+    ap.add_argument("--date", required=True)     # YYYY-MM-DD
+    ap.add_argument("--max-workers", type=int, default=6)
+    ap.add_argument("--mode", choices=["important","all"], default="important")
+    args=ap.parse_args()
+
+    daydir = RAW/args.date
+    csv = daydir/"tdnet.csv"
+    if not csv.exists():
+        print(f"[enrich] missing {csv}"); return
+
+    df=pd.read_csv(csv)
+
+    # 驥崎ｦ√ヵ繧｣繝ｫ繧ｿ縺ｯ譌･譛ｬ隱槭く繝ｼ繝ｯ繝ｼ繝峨ｒ菴ｿ繧上★縲∝ｽ馴擇縺ｯ all 縺ｨ蜷檎ｭ峨↓謇ｱ縺・ｼ域枚蟄怜喧縺大屓驕ｿ・・    # 蟆・擂: 繧ｫ繝・ざ繝ｪ豁｣隕丞喧蠕後↓螳牙・縺ｪ繝輔ぅ繝ｫ繧ｿ繧定ｿｽ蜉
+    target = df.copy()
+
+    # 豎ｺ螳壹＆繧後◆ detail_url・磯撼PDF・峨１DF縺ｮ縺ｿ陦後・遨ｺ縺ｮ縺ｾ縺ｾ
+    target["detail_url"] = target.apply(pick_detail_url, axis=1)
+
+    # 1) 縺ｾ縺壼・陦後↓繝輔か繝ｼ繝ｫ繝舌ャ繧ｯ・医ち繧､繝医Ν繧堤洒譁・↓縲￣DF縺後≠繧後・縺昴ｌ繧・url_used 縺ｫ・・    target["title_html"]   = ""
+    target["text_snippet"] = target.get("繧ｿ繧､繝医Ν","").astype(str)
+    target["url_used"]     = target.get("豺ｻ莉篭RL","").astype(str)
+
+    # 2) detail_url 縺後≠繧玖｡後□縺第悽譁・歓蜃ｺ縺ｧ荳頑嶌縺・    has_detail = target["detail_url"]!=""
+    if has_detail.any() and requests is not None:
+        s=requests.Session()
+        ck=os.getenv("KABUTAN_COOKIE","")
+        if ck: s.headers.update({"Cookie": ck, "User-Agent":"Mozilla/5.0"})
+        urls = target.loc[has_detail,"detail_url"].tolist()
+        out=[]
+        with cf.ThreadPoolExecutor(max_workers=args.max_workers) as ex:
+            futs=[ex.submit(fetch_one, s, u) for u in urls]
+            for f in cf.as_completed(futs):
+                out.append(f.result())
+        # 鬆・ｺ丞ｯｾ蠢・        target.loc[has_detail,"title_html"]   = [x[0] for x in out]
+        target.loc[has_detail,"text_snippet"] = [x[1] for x in out]
+        target.loc[has_detail,"url_used"]     = target.loc[has_detail,"detail_url"]
+
+    BRZ.mkdir(parents=True, exist_ok=True)
+    pq = BRZ/f"tdnet_day_with_html_{args.date.replace('-','')}.parquet"
+    target.to_parquet(pq, index=False)
+    print(f"[enrich] -> {pq} rows={len(target)} (detail_used={int(has_detail.sum())})")
+
+if __name__=="__main__": main()
+
+
+

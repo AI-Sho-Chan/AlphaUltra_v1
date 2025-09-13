@@ -1,0 +1,11 @@
+﻿days: 7
+paths:
+  root: "data/raw/edinet"
+  reports: "reports/checks"
+filters:
+  include_keywords: []     # まず全件
+vendor:
+  api_base: "https://api.edinet-fsa.go.jp/api/v2"
+  api_key_env: "EDINET_API_KEY"
+rate_limit:
+  min_sleep_sec: 1.0

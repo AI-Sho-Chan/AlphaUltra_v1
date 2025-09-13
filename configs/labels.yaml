@@ -1,0 +1,21 @@
+paths:
+  adj_prices_dir: "data/proc/adj_prices"
+  labels_dir:     "data/proc/labels"
+  reports_dir:    "reports/checks"
+benchmark:
+  symbol: "SPY"
+targets:
+  two_x_days: 252
+  ten_x_days: 1260
+relative_windows:
+  "1M": 21
+  "3M": 63
+  "12M": 252
+thresholds:
+  rel_1M_hit: 0.10
+  rel_3M_hit: 0.20
+  rel_12M_hit: 0.50
+options:
+  min_history_days: 300
+  save_ttd: true
+  save_drawdown: true

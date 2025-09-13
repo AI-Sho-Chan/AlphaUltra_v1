@@ -1,0 +1,12 @@
+﻿paths:
+  panel: data/us/proc/us_panel.parquet
+  labels: data/us/proc/us_targets.parquet
+model:
+  task: y_2x
+  learner: lightgbm
+cv:
+  folds: 5
+  purge_days: 20
+  embargo_days: 5
+costs:
+  roundtrip_bps: 10
