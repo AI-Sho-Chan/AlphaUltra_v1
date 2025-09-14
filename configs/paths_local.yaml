@@ -1,0 +1,7 @@
+﻿paths:
+  tdnet_raw: data/raw/tdnet
+  tdnet_quarantine: data/raw/tdnet_bak_scope
+  kabutan_export: C:/Data/Kabutan/exports  # 後で実在に合わせて更新可
+scope:
+  tdnet_start: 2013-09-01
+  tdnet_end: 2014-12-31
