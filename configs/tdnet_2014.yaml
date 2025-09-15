@@ -2,6 +2,7 @@ paths:
   tdnet_raw: data/raw/tdnet
   tdnet_features: data/proc/features_tdnet/tdnet_event_features.parquet
   adj_prices: data/proc/adj_prices/adj_prices.parquet
+  prices: data/proc/prices/jp_prices_std.parquet
 params:
   start_date: 2014-01-01
   end_date: 2014-12-31
