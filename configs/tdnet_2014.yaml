@@ -4,4 +4,6 @@
 params:
   start_date: 2014-01-01
   end_date:   2014-12-31
-
+paths:
+  features: tmp/features_tdnet_q4_smoke.parquet
+  prices: data/proc/prices/jp_prices_std_compat_q4p.parquet
